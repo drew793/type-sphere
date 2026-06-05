@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Typesphere — ASCII Sphere Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f3ee;
+  --paper: #ffffff;
+  --ink: #0a0a0a;
+  --muted: #888579;
+  --line: #dcdacd;
+  --accent: #1d3eff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: 100vh;
+}
+
+.sidebar {
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+  padding: 28px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--line); }
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.brand h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.brand h1 em {
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 400;
+}
+.brand span {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.randomize {
+  width: 100%;
+  padding: 16px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 18px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.randomize:hover {
+  background: var(--accent);
+  letter-spacing: 0.05em;
+}
+.randomize .arrow {
+  font-style: normal;
+  display: inline-block;
+  transition: transform 0.4s ease;
+  margin-left: 8px;
+}
+.randomize:hover .arrow { transform: translateX(4px) rotate(360deg); }
+.randomize small {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-top: 4px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+  margin-left: 10px;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.control-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.control-head label {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.control-head .value {
+  font-family: 'Fraunces', serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  font-feature-settings: "tnum";
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--line);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.text-input {
+  width: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  letter-spacing: 0.1em;
+  outline: none;
+  font-weight: 500;
+}
+.text-input:focus { border-color: var(--accent); }
+
+.toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.toggles.three { grid-template-columns: 1fr 1fr 1fr; }
+.toggle-btn {
+  padding: 9px 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--muted);
+  text-align: center;
+}
+.toggle-btn:hover { border-color: var(--ink); color: var(--ink); }
+.toggle-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.color-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.color-swatch {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.color-swatch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.color-hex {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+.color-hex:focus { border-color: var(--accent); }
+
+.export-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.export-btn {
+  padding: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font-family: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+.export-btn:hover { background: var(--accent); }
+.export-btn.secondary {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+.export-btn.secondary:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.play-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.play-btn {
+  padding: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.play-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.play-btn:hover { border-color: var(--ink); }
+
+.drag-hint {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.drag-hint strong { color: var(--ink); font-weight: 500; }
+.drag-hint kbd {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  color: var(--ink);
+}
+
+.canvas-area {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.canvas-header {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(8px);
+}
+.canvas-header .meta {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.canvas-header .meta strong { color: var(--ink); font-weight: 500; }
+
+.canvas-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  position: relative;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.canvas-wrap {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  background: #0a0a0a;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 10px 40px rgba(0,0,0,0.15);
+}
+#output-canvas {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 200px);
+  cursor: grab;
+  touch-action: none;
+}
+#output-canvas:active { cursor: grabbing; }
+
+.canvas-footer {
+  padding: 12px 24px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  background: rgba(255,255,255,0.5);
+}
+
+.corner-mark {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .sidebar { max-height: 50vh; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Type<em>sphere</em></h1>
+      <span>ASCII typography orbit</span>
+    </div>
+
+    <button class="randomize" id="randomize">
+      Randomize <span class="arrow">→</span>
+      <small>New rotation &amp; shape</small>
+    </button>
+
+    <!-- WORD -->
+    <div class="section">
+      <div class="section-title">Text</div>
+      <input type="text" class="text-input" id="word" value="PROXIMAL" maxlength="80" placeholder="Letters, numbers, symbols…">
+    </div>
+
+    <!-- SHAPE -->
+    <div class="section">
+      <div class="section-title">Shape</div>
+      <div class="toggles three">
+        <button class="toggle-btn active" data-shape="sphere">Sphere</button>
+        <button class="toggle-btn" data-shape="torus">Torus</button>
+        <button class="toggle-btn" data-shape="cylinder">Cylinder</button>
+      </div>
+      <div class="toggles three">
+        <button class="toggle-btn" data-shape="cube">Cube</button>
+        <button class="toggle-btn" data-shape="cone">Cone</button>
+        <button class="toggle-btn" data-shape="helix">Helix</button>
+      </div>
+      <div class="toggles three">
+        <button class="toggle-btn" data-shape="lattice">Lattice</button>
+        <button class="toggle-btn" data-shape="wave">Wave</button>
+        <button class="toggle-btn" data-shape="mobius">Möbius</button>
+      </div>
+      <div class="toggles three">
+        <button class="toggle-btn" data-shape="dna">DNA</button>
+        <button class="toggle-btn" data-shape="pyramid">Pyramid</button>
+        <button class="toggle-btn" data-shape="octahedron">Octa</button>
+      </div>
+      <div class="toggles three">
+        <button class="toggle-btn" data-shape="star">Star</button>
+        <button class="toggle-btn" data-shape="spiral">Spiral</button>
+        <button class="toggle-btn" data-shape="galaxy">Galaxy</button>
+      </div>
+    </div>
+
+    <!-- DENSITY -->
+    <div class="section">
+      <div class="section-title">Sampling</div>
+
+      <div class="control">
+        <div class="control-head">
+          <label>Density</label>
+          <span class="value" id="density-val">60</span>
+        </div>
+        <input type="range" id="density" min="20" max="120" value="60">
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <label>Size</label>
+          <span class="value" id="size-val">60</span>
+        </div>
+        <input type="range" id="size" min="20" max="100" value="60">
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <label>Font size</label>
+          <span class="value" id="font-val">14</span>
+        </div>
+        <input type="range" id="font" min="8" max="24" value="14">
+      </div>
+    </div>
+
+    <!-- ROTATION -->
+    <div class="section">
+      <div class="section-title">Rotation</div>
+
+      <div class="drag-hint">
+        <strong>Drag the shape</strong> to rotate.<br>
+        Hold <kbd>Shift</kbd> while dragging to spin on the Z axis.
+      </div>
+
+      <div class="export-row">
+        <button class="export-btn secondary" id="reset-rotation">Reset</button>
+        <button class="export-btn secondary" id="spin-toggle">Auto-spin</button>
+      </div>
+    </div>
+
+    <!-- THEME -->
+    <div class="section">
+      <div class="section-title">Theme</div>
+      <div class="toggles">
+        <button class="toggle-btn active" data-theme="dark">Dark</button>
+        <button class="toggle-btn" data-theme="light">Light</button>
+      </div>
+      <div class="color-row">
+        <div class="color-swatch" id="swatch" style="background:#ffffff;">
+          <input type="color" id="color-picker" value="#ffffff">
+        </div>
+        <input type="text" class="color-hex" id="color-hex" value="#FFFFFF" maxlength="7">
+      </div>
+      <div class="toggles">
+        <button class="toggle-btn active" data-shade="on">Depth shading</button>
+        <button class="toggle-btn" data-shade="off">Flat</button>
+      </div>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="section">
+      <div class="section-title">Export</div>
+      <div class="export-row">
+        <button class="export-btn" id="export-png">PNG</button>
+        <button class="export-btn secondary" id="export-svg">SVG</button>
+      </div>
+      <div class="export-row">
+        <button class="export-btn secondary" id="export-txt">TXT</button>
+        <button class="export-btn secondary" id="copy-btn">Copy</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="canvas-area">
+    <div class="canvas-header">
+      <div class="meta">
+        Shape: <strong id="shape-display">sphere</strong>
+      </div>
+      <div class="meta">
+        Glyphs: <strong id="glyph-count">—</strong>
+      </div>
+    </div>
+
+    <div class="canvas-stage">
+      <div class="canvas-wrap">
+        <canvas id="output-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="canvas-footer">
+      <span id="rotation-display">A=0.00 B=0.00 C=0.00</span>
+      <span id="dimensions">1000 × 1000</span>
+    </div>
+  </main>
+</div>
+
+<div class="corner-mark">made with sin &amp; cos</div>
+
+<script>
+(function(){
+  const state = {
+    word: 'PROXIMAL',
+    shape: 'sphere',
+    density: 60,    // number of sample points along each axis
+    size: 60,       // overall shape size (% of canvas)
+    fontSize: 14,
+    xspeed: 20,
+    yspeed: 30,
+    zspeed: 0,
+    playing: false,  // default to manual drag; auto-spin toggle enables
+    theme: 'dark',
+    color: '#ffffff',
+    shading: true,
+    A: 0.4, B: 0.6, C: 0,    // rotation angles (small initial offset so depth reads)
+    glyphCount: 0
+  };
+
+  const canvas = document.getElementById('output-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 1000, H = 1000;
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.width = '100%';
+  canvas.style.height = 'auto';
+
+  // ============ POINT GENERATION ============
+  // Generate 3D points on the surface of the chosen shape.
+  // Each point gets a normalized depth value (0..1) for shading.
+
+  function generatePoints() {
+    const pts = [];
+    const N = state.density;
+    const R = 1.0; // unit radius, scaled later
+
+    switch (state.shape) {
+      case 'sphere': {
+        // Fibonacci sphere — evenly distributed points
+        const total = N * N;
+        const phi = Math.PI * (3 - Math.sqrt(5)); // golden angle
+        for (let i = 0; i < total; i++) {
+          const y = 1 - (i / (total - 1)) * 2; // -1..1
+          const radius = Math.sqrt(1 - y * y);
+          const theta = phi * i;
+          const x = Math.cos(theta) * radius;
+          const z = Math.sin(theta) * radius;
+          pts.push({ x: x * R, y: y * R, z: z * R });
+        }
+        break;
+      }
+      case 'torus': {
+        // donut shape - tube around big ring
+        const R1 = 0.7, R2 = 0.3;
+        const uSteps = N, vSteps = Math.max(8, Math.floor(N / 3));
+        for (let i = 0; i < uSteps; i++) {
+          for (let j = 0; j < vSteps; j++) {
+            const u = (i / uSteps) * Math.PI * 2;
+            const v = (j / vSteps) * Math.PI * 2;
+            const x = (R1 + R2 * Math.cos(v)) * Math.cos(u);
+            const y = R2 * Math.sin(v);
+            const z = (R1 + R2 * Math.cos(v)) * Math.sin(u);
+            pts.push({ x, y, z });
+          }
+        }
+        break;
+      }
+      case 'cylinder': {
+        const heightSteps = N;
+        const circleSteps = Math.max(20, Math.floor(N / 1.5));
+        for (let i = 0; i < heightSteps; i++) {
+          const y = -1 + (i / (heightSteps - 1)) * 2;
+          for (let j = 0; j < circleSteps; j++) {
+            const t = (j / circleSteps) * Math.PI * 2;
+            const x = Math.cos(t);
+            const z = Math.sin(t);
+            pts.push({ x: x * R, y: y * R, z: z * R });
+          }
+        }
+        break;
+      }
+      case 'cube': {
+        // wireframe-ish cube — points on each face
+        const perSide = Math.max(8, Math.floor(N / 4));
+        const facePoints = (fixedAxis, fixedVal) => {
+          for (let i = 0; i < perSide; i++) {
+            for (let j = 0; j < perSide; j++) {
+              const a = -1 + (i / (perSide - 1)) * 2;
+              const b = -1 + (j / (perSide - 1)) * 2;
+              const p = { x: 0, y: 0, z: 0 };
+              if (fixedAxis === 'x') { p.x = fixedVal; p.y = a; p.z = b; }
+              if (fixedAxis === 'y') { p.y = fixedVal; p.x = a; p.z = b; }
+              if (fixedAxis === 'z') { p.z = fixedVal; p.x = a; p.y = b; }
+              pts.push(p);
+            }
+          }
+        };
+        facePoints('x', 1); facePoints('x', -1);
+        facePoints('y', 1); facePoints('y', -1);
+        facePoints('z', 1); facePoints('z', -1);
+        break;
+      }
+      case 'cone': {
+        const heightSteps = N;
+        const circleSteps = Math.max(20, Math.floor(N / 1.5));
+        for (let i = 0; i < heightSteps; i++) {
+          const t = i / (heightSteps - 1); // 0..1
+          const y = -1 + t * 2;
+          const r = (1 - t); // radius shrinks toward top
+          for (let j = 0; j < circleSteps; j++) {
+            const a = (j / circleSteps) * Math.PI * 2;
+            pts.push({ x: Math.cos(a) * r, y, z: Math.sin(a) * r });
+          }
+        }
+        break;
+      }
+      case 'helix': {
+        const turns = 4;
+        const total = N * 4;
+        for (let i = 0; i < total; i++) {
+          const t = i / total;
+          const angle = t * Math.PI * 2 * turns;
+          const y = -1 + t * 2;
+          const r = 0.7;
+          pts.push({ x: Math.cos(angle) * r, y, z: Math.sin(angle) * r });
+        }
+        break;
+      }
+      case 'lattice': {
+        // 3D grid of points forming a cube wireframe lattice
+        const steps = Math.max(4, Math.floor(N / 8));
+        for (let i = 0; i < steps; i++) {
+          for (let j = 0; j < steps; j++) {
+            for (let k = 0; k < steps; k++) {
+              // only render points on the outer shell to keep it readable
+              const onEdgeI = (i === 0 || i === steps - 1);
+              const onEdgeJ = (j === 0 || j === steps - 1);
+              const onEdgeK = (k === 0 || k === steps - 1);
+              // include if on at least 2 edges (so we get the wire-cube look)
+              const edgeCount = (onEdgeI?1:0) + (onEdgeJ?1:0) + (onEdgeK?1:0);
+              if (edgeCount < 2) continue;
+              const x = -1 + (i / (steps - 1)) * 2;
+              const y = -1 + (j / (steps - 1)) * 2;
+              const z = -1 + (k / (steps - 1)) * 2;
+              pts.push({ x, y, z });
+            }
+          }
+        }
+        break;
+      }
+      case 'wave': {
+        // rippling plane: z = sin(distance from center)
+        const steps = N;
+        for (let i = 0; i < steps; i++) {
+          for (let j = 0; j < steps; j++) {
+            const x = -1 + (i / (steps - 1)) * 2;
+            const z = -1 + (j / (steps - 1)) * 2;
+            const d = Math.sqrt(x * x + z * z);
+            // ripples — multi-frequency wave for visual interest
+            const y = 0.35 * Math.sin(d * 6) * Math.exp(-d * 0.5);
+            pts.push({ x, y, z });
+          }
+        }
+        break;
+      }
+      case 'mobius': {
+        // Möbius strip - one-sided surface with a half twist
+        const uSteps = N * 2;
+        const vSteps = Math.max(4, Math.floor(N / 10));
+        for (let i = 0; i < uSteps; i++) {
+          const u = (i / uSteps) * Math.PI * 2;
+          for (let j = 0; j < vSteps; j++) {
+            const v = -0.4 + (j / (vSteps - 1)) * 0.8;
+            const x = (1 + v * Math.cos(u / 2)) * Math.cos(u);
+            const y = v * Math.sin(u / 2);
+            const z = (1 + v * Math.cos(u / 2)) * Math.sin(u);
+            pts.push({ x: x * 0.7, y: y * 0.7, z: z * 0.7 });
+          }
+        }
+        break;
+      }
+      case 'dna': {
+        // double helix — two interleaved strands plus rungs between them
+        const turns = 3;
+        const total = N * 3;
+        for (let i = 0; i < total; i++) {
+          const t = i / total;
+          const angle = t * Math.PI * 2 * turns;
+          const y = -1 + t * 2;
+          const r = 0.55;
+          // strand A
+          pts.push({ x: Math.cos(angle) * r, y, z: Math.sin(angle) * r });
+          // strand B (opposite side)
+          pts.push({ x: Math.cos(angle + Math.PI) * r, y, z: Math.sin(angle + Math.PI) * r });
+          // rungs every few steps
+          if (i % 8 === 0) {
+            const rungSteps = 6;
+            for (let s = 1; s < rungSteps; s++) {
+              const tr = s / rungSteps;
+              const ax = Math.cos(angle) * r, az = Math.sin(angle) * r;
+              const bx = Math.cos(angle + Math.PI) * r, bz = Math.sin(angle + Math.PI) * r;
+              pts.push({
+                x: ax + (bx - ax) * tr,
+                y: y,
+                z: az + (bz - az) * tr
+              });
+            }
+          }
+        }
+        break;
+      }
+      case 'pyramid': {
+        // 4-sided pyramid - base square + 4 triangular faces
+        const perSide = Math.max(10, Math.floor(N / 3));
+        // base (y = -1)
+        for (let i = 0; i < perSide; i++) {
+          for (let j = 0; j < perSide; j++) {
+            const x = -1 + (i / (perSide - 1)) * 2;
+            const z = -1 + (j / (perSide - 1)) * 2;
+            pts.push({ x, y: -1, z });
+          }
+        }
+        // 4 triangular faces meeting at apex (0, 1, 0)
+        const faceCorners = [
+          [ [-1,-1,-1], [ 1,-1,-1] ], // front
+          [ [ 1,-1,-1], [ 1,-1, 1] ], // right
+          [ [ 1,-1, 1], [-1,-1, 1] ], // back
+          [ [-1,-1, 1], [-1,-1,-1] ]  // left
+        ];
+        const apex = [0, 1, 0];
+        for (const [a, b] of faceCorners) {
+          for (let i = 0; i < perSide; i++) {
+            for (let j = 0; j <= i; j++) {
+              // barycentric on triangle (apex, a, b)
+              const t1 = 1 - (i / (perSide - 1));
+              const t2 = (i > 0) ? (j / i) : 0;
+              const t3 = 1 - t1 - (i / (perSide - 1)) * (1 - t2);
+              // simpler: interpolate from apex toward edge
+              const u = i / (perSide - 1);
+              const v = (i > 0) ? (j / i) : 0;
+              const ex = a[0] + (b[0] - a[0]) * v;
+              const ey = a[1] + (b[1] - a[1]) * v;
+              const ez = a[2] + (b[2] - a[2]) * v;
+              pts.push({
+                x: apex[0] + (ex - apex[0]) * u,
+                y: apex[1] + (ey - apex[1]) * u,
+                z: apex[2] + (ez - apex[2]) * u
+              });
+            }
+          }
+        }
+        break;
+      }
+      case 'octahedron': {
+        // 8 triangular faces meeting at 6 vertices (±1 on each axis)
+        const verts = [
+          [ 1, 0, 0], [-1, 0, 0],
+          [ 0, 1, 0], [ 0,-1, 0],
+          [ 0, 0, 1], [ 0, 0,-1]
+        ];
+        // 8 faces: each axis-aligned triangle
+        const faces = [
+          [0,2,4], [0,2,5], [0,3,4], [0,3,5],
+          [1,2,4], [1,2,5], [1,3,4], [1,3,5]
+        ];
+        const perFace = Math.max(8, Math.floor(N / 4));
+        for (const [ai, bi, ci] of faces) {
+          const a = verts[ai], b = verts[bi], c = verts[ci];
+          for (let i = 0; i < perFace; i++) {
+            for (let j = 0; j <= perFace - i; j++) {
+              const u = i / perFace;
+              const v = j / perFace;
+              const w = 1 - u - v;
+              pts.push({
+                x: a[0]*w + b[0]*u + c[0]*v,
+                y: a[1]*w + b[1]*u + c[1]*v,
+                z: a[2]*w + b[2]*u + c[2]*v
+              });
+            }
+          }
+        }
+        break;
+      }
+      case 'star': {
+        // 3D star: outer points at vertices, inner points between
+        // simple 5-pointed star extruded with a sphere-like distribution that bulges at points
+        const total = N * N;
+        const phi = Math.PI * (3 - Math.sqrt(5));
+        const points5 = 5;
+        for (let i = 0; i < total; i++) {
+          const y = 1 - (i / (total - 1)) * 2;
+          const radius = Math.sqrt(1 - y * y);
+          const theta = phi * i;
+          // star radius modulation - 5 sharp peaks around the equator
+          const mod = 0.5 + 0.5 * Math.pow(Math.abs(Math.cos(theta * points5 / 2)), 3);
+          const r = radius * mod;
+          pts.push({
+            x: Math.cos(theta) * r,
+            y: y * mod,
+            z: Math.sin(theta) * r
+          });
+        }
+        break;
+      }
+      case 'spiral': {
+        // flat archimedean spiral, viewed slightly tilted in 3D
+        const total = N * 4;
+        const maxTurns = 5;
+        for (let i = 0; i < total; i++) {
+          const t = i / total;
+          const angle = t * Math.PI * 2 * maxTurns;
+          const r = t; // grows linearly
+          pts.push({
+            x: Math.cos(angle) * r,
+            y: 0,                  // flat in y
+            z: Math.sin(angle) * r
+          });
+        }
+        break;
+      }
+      case 'galaxy': {
+        // logarithmic spiral arms in 3D with a thin disc bulge
+        const arms = 3;
+        const total = N * 5;
+        for (let i = 0; i < total; i++) {
+          const armIdx = i % arms;
+          const t = (i / arms) / (total / arms);
+          // logarithmic spiral
+          const angle = t * Math.PI * 6 + (armIdx * (Math.PI * 2 / arms));
+          const r = 0.15 + t * 0.85;
+          // slight thickness in y, more at center (bulge)
+          const bulge = (1 - t) * 0.3;
+          const yOff = ((i * 9301 + 49297) % 233280) / 233280 - 0.5; // pseudo-random per point
+          pts.push({
+            x: Math.cos(angle) * r,
+            y: yOff * bulge,
+            z: Math.sin(angle) * r
+          });
+        }
+        break;
+      }
+    }
+    return pts;
+  }
+
+  let points = generatePoints();
+
+  // ============ RENDER ============
+  function render() {
+    const dark = state.theme === 'dark';
+    const bg = dark ? '#0a0a0a' : '#ffffff';
+    document.querySelector('.canvas-wrap').style.background = bg;
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W / 2;
+    const cy = H / 2;
+    // scale: state.size is percentage; convert to pixels
+    const scale = (state.size / 100) * Math.min(W, H) * 0.45;
+
+    // rotation matrix params
+    const sinA = Math.sin(state.A), cosA = Math.cos(state.A);
+    const sinB = Math.sin(state.B), cosB = Math.cos(state.B);
+    const sinC = Math.sin(state.C), cosC = Math.cos(state.C);
+
+    // word for character cycling (Unicode-safe char array)
+    const chars = toChars(state.word);
+
+    // collect projected points so we can sort by depth
+    const projected = [];
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      let x = p.x, y = p.y, z = p.z;
+
+      // Rotate around X (angle A)
+      let y1 = y * cosA - z * sinA;
+      let z1 = y * sinA + z * cosA;
+      // Rotate around Y (angle B)
+      let x2 = x * cosB + z1 * sinB;
+      let z2 = -x * sinB + z1 * cosB;
+      // Rotate around Z (angle C)
+      let x3 = x2 * cosC - y1 * sinC;
+      let y3 = x2 * sinC + y1 * cosC;
+
+      // depth for shading (z towards viewer)
+      const depth = z2; // -1..+1 ish (front = positive)
+
+      // perspective projection (slight)
+      const persp = 1 / (3 - z2 * 0.5);
+      const sx = cx + x3 * scale * persp * 2;
+      const sy = cy + y3 * scale * persp * 2;
+
+      projected.push({ x: sx, y: sy, depth, idx: i });
+    }
+
+    // Sort back-to-front so front glyphs draw on top
+    projected.sort((a, b) => a.depth - b.depth);
+
+    // Setup text rendering
+    ctx.font = `${state.fontSize}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Render each point as a character from the word
+    let drawn = 0;
+    const baseColor = state.color;
+    const rgb = hexToRgb(baseColor);
+
+    for (const pr of projected) {
+      // skip if offscreen
+      if (pr.x < -20 || pr.x > W + 20 || pr.y < -20 || pr.y > H + 20) continue;
+
+      // pick character — cycle through the chars based on position
+      const ch = chars[pr.idx % chars.length];
+
+      // opacity based on depth for shading
+      let alpha;
+      if (state.shading) {
+        // depth roughly -1.2..+1.2; front = bright, back = dim
+        const norm = (pr.depth + 1.2) / 2.4; // 0..1
+        alpha = 0.15 + Math.max(0, Math.min(1, norm)) * 0.85;
+      } else {
+        alpha = 0.95;
+      }
+
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+      ctx.fillText(ch, pr.x, pr.y);
+      drawn++;
+    }
+
+    state.glyphCount = drawn;
+    document.getElementById('glyph-count').textContent = drawn.toLocaleString();
+    document.getElementById('rotation-display').textContent =
+      `A=${state.A.toFixed(2)} B=${state.B.toFixed(2)} C=${state.C.toFixed(2)}`;
+  }
+
+  function hexToRgb(hex) {
+    const c = hex.replace('#', '');
+    return {
+      r: parseInt(c.substring(0,2), 16),
+      g: parseInt(c.substring(2,4), 16),
+      b: parseInt(c.substring(4,6), 16)
+    };
+  }
+
+  // Split a string into an array of full characters (code points), so
+  // astral-plane glyphs like 𝔼 (surrogate pairs) stay intact instead of
+  // being split into two broken halves by charAt/indexing.
+  function toChars(str) {
+    const s = (str && str.length) ? str : 'PROXIMAL';
+    return Array.from(s);
+  }
+
+  // ============ ANIMATION LOOP ============
+  let lastT = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.1, (now - lastT) / 1000);
+    lastT = now;
+    if (state.playing) {
+      state.A += (state.xspeed / 100) * dt;
+      state.B += (state.yspeed / 100) * dt;
+      state.C += (state.zspeed / 100) * dt;
+    }
+    render();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame((t) => { lastT = t; tick(t); });
+
+  // ============ CONTROLS ============
+  // Word — accept letters, numbers, spaces, and special characters as typed.
+  // Only strip line breaks/tabs (which can't render as glyphs); keep everything else.
+  document.getElementById('word').addEventListener('input', (e) => {
+    const cleaned = e.target.value.replace(/[\r\n\t]/g, '');
+    // Fall back to default only when the field is completely empty
+    state.word = cleaned.length > 0 ? cleaned : 'PROXIMAL';
+    if (cleaned !== e.target.value) e.target.value = cleaned;
+  });
+
+  // Shape
+  document.querySelectorAll('[data-shape]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-shape]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.shape = btn.dataset.shape;
+      document.getElementById('shape-display').textContent = state.shape;
+      points = generatePoints();
+    });
+  });
+
+  // Sliders
+  function wireSlider(id, key, valId, regen) {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      state[key] = +el.value;
+      document.getElementById(valId).textContent = el.value;
+      if (regen) points = generatePoints();
+    });
+  }
+  wireSlider('density', 'density', 'density-val', true);
+  wireSlider('size', 'size', 'size-val');
+  wireSlider('font', 'fontSize', 'font-val');
+
+  // Reset rotation
+  document.getElementById('reset-rotation').addEventListener('click', () => {
+    state.A = 0;
+    state.B = 0;
+    state.C = 0;
+  });
+
+  // Auto-spin toggle
+  const spinToggle = document.getElementById('spin-toggle');
+  spinToggle.addEventListener('click', () => {
+    state.playing = !state.playing;
+    spinToggle.classList.toggle('active', state.playing);
+    spinToggle.textContent = state.playing ? '⏸ Stop spin' : 'Auto-spin';
+  });
+
+  // ============ MOUSE / TOUCH DRAG TO ROTATE ============
+  let dragging = false;
+  let lastX = 0, lastY = 0;
+  let dragShift = false;
+
+  function startDrag(clientX, clientY, shiftKey) {
+    dragging = true;
+    lastX = clientX;
+    lastY = clientY;
+    dragShift = !!shiftKey;
+    // Stop autospin while dragging so it feels responsive
+    state.playing = false;
+    spinToggle.classList.remove('active');
+    spinToggle.textContent = 'Auto-spin';
+  }
+
+  function moveDrag(clientX, clientY) {
+    if (!dragging) return;
+    const dx = clientX - lastX;
+    const dy = clientY - lastY;
+    lastX = clientX;
+    lastY = clientY;
+
+    // Sensitivity: a full canvas-width drag should be roughly one full rotation
+    const rect = canvas.getBoundingClientRect();
+    const sens = (Math.PI * 2) / Math.max(rect.width, 1);
+
+    if (dragShift) {
+      // Shift held: spin around Z axis (roll)
+      state.C += dx * sens;
+    } else {
+      // Normal: horizontal drag rotates around Y (yaw), vertical drag rotates around X (pitch)
+      state.B += dx * sens;
+      state.A += dy * sens;
+    }
+  }
+
+  function endDrag() {
+    dragging = false;
+  }
+
+  canvas.addEventListener('mousedown', (e) => {
+    startDrag(e.clientX, e.clientY, e.shiftKey);
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (dragging) {
+      // Update shift state mid-drag if user presses/releases it
+      dragShift = e.shiftKey;
+      moveDrag(e.clientX, e.clientY);
+    }
+  });
+  window.addEventListener('mouseup', endDrag);
+  window.addEventListener('mouseleave', endDrag);
+
+  // Touch support
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      startDrag(t.clientX, t.clientY, false);
+      e.preventDefault();
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && dragging) {
+      const t = e.touches[0];
+      moveDrag(t.clientX, t.clientY);
+      e.preventDefault();
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchend', endDrag);
+  canvas.addEventListener('touchcancel', endDrag);
+
+  // Theme
+  document.querySelectorAll('[data-theme]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-theme]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.theme = btn.dataset.theme;
+      if (state.theme === 'dark' && state.color === '#000000') setColor('#ffffff');
+      else if (state.theme === 'light' && state.color === '#ffffff') setColor('#000000');
+    });
+  });
+
+  // Shading
+  document.querySelectorAll('[data-shade]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-shade]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.shading = btn.dataset.shade === 'on';
+    });
+  });
+
+  // Color
+  const colorPicker = document.getElementById('color-picker');
+  const colorHex = document.getElementById('color-hex');
+  const swatch = document.getElementById('swatch');
+  function setColor(hex) {
+    state.color = hex;
+    colorPicker.value = hex;
+    colorHex.value = hex.toUpperCase();
+    swatch.style.background = hex;
+  }
+  colorPicker.addEventListener('input', (e) => setColor(e.target.value));
+  colorHex.addEventListener('change', (e) => {
+    let v = e.target.value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9A-Fa-f]{6}$/.test(v)) setColor(v);
+  });
+
+  // Randomize — new shape, new rotation
+  document.getElementById('randomize').addEventListener('click', () => {
+    const shapes = ['sphere', 'torus', 'cylinder', 'cube', 'cone', 'helix', 'lattice', 'wave', 'mobius', 'dna', 'pyramid', 'octahedron', 'star', 'spiral', 'galaxy'];
+    const newShape = shapes[Math.floor(Math.random() * shapes.length)];
+    state.shape = newShape;
+    document.querySelectorAll('[data-shape]').forEach(b => {
+      b.classList.toggle('active', b.dataset.shape === newShape);
+    });
+    document.getElementById('shape-display').textContent = newShape;
+    state.A = Math.random() * Math.PI * 2;
+    state.B = Math.random() * Math.PI * 2;
+    state.C = Math.random() * Math.PI * 2;
+    // Pick fresh auto-spin speeds, in case the user enables auto-spin
+    state.xspeed = Math.round((Math.random() - 0.5) * 80);
+    state.yspeed = Math.round((Math.random() - 0.5) * 80);
+    state.zspeed = Math.round((Math.random() - 0.5) * 40);
+    points = generatePoints();
+  });
+
+  // EXPORT PNG - render fresh on transparent background
+  document.getElementById('export-png').addEventListener('click', () => {
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = W;
+    exportCanvas.height = H;
+    const ectx = exportCanvas.getContext('2d');
+    // no fillRect — transparent
+
+    const cx = W / 2, cy = H / 2;
+    const scale = (state.size / 100) * Math.min(W, H) * 0.45;
+    const sinA = Math.sin(state.A), cosA = Math.cos(state.A);
+    const sinB = Math.sin(state.B), cosB = Math.cos(state.B);
+    const sinC = Math.sin(state.C), cosC = Math.cos(state.C);
+    const chars = toChars(state.word);
+    const rgb = hexToRgb(state.color);
+
+    const projected = [];
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      const y1 = p.y * cosA - p.z * sinA;
+      const z1 = p.y * sinA + p.z * cosA;
+      const x2 = p.x * cosB + z1 * sinB;
+      const z2 = -p.x * sinB + z1 * cosB;
+      const x3 = x2 * cosC - y1 * sinC;
+      const y3 = x2 * sinC + y1 * cosC;
+      const persp = 1 / (3 - z2 * 0.5);
+      const sx = cx + x3 * scale * persp * 2;
+      const sy = cy + y3 * scale * persp * 2;
+      projected.push({ x: sx, y: sy, depth: z2, idx: i });
+    }
+    projected.sort((a, b) => a.depth - b.depth);
+
+    ectx.font = `${state.fontSize}px 'JetBrains Mono', monospace`;
+    ectx.textAlign = 'center';
+    ectx.textBaseline = 'middle';
+
+    for (const pr of projected) {
+      if (pr.x < -20 || pr.x > W + 20 || pr.y < -20 || pr.y > H + 20) continue;
+      const ch = chars[pr.idx % chars.length];
+      let alpha;
+      if (state.shading) {
+        const norm = (pr.depth + 1.2) / 2.4;
+        alpha = 0.15 + Math.max(0, Math.min(1, norm)) * 0.85;
+      } else {
+        alpha = 0.95;
+      }
+      ectx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+      ectx.fillText(ch, pr.x, pr.y);
+    }
+
+    exportCanvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `typesphere-${state.shape}-${Date.now()}.png`;
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }, 'image/png');
+  });
+
+  // EXPORT SVG - rebuild current frame as vector
+  document.getElementById('export-svg').addEventListener('click', () => {
+    const cx = W / 2, cy = H / 2;
+    const scale = (state.size / 100) * Math.min(W, H) * 0.45;
+    const sinA = Math.sin(state.A), cosA = Math.cos(state.A);
+    const sinB = Math.sin(state.B), cosB = Math.cos(state.B);
+    const sinC = Math.sin(state.C), cosC = Math.cos(state.C);
+    const chars = toChars(state.word);
+    const rgb = hexToRgb(state.color);
+
+    const projected = [];
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      const y1 = p.y * cosA - p.z * sinA;
+      const z1 = p.y * sinA + p.z * cosA;
+      const x2 = p.x * cosB + z1 * sinB;
+      const z2 = -p.x * sinB + z1 * cosB;
+      const x3 = x2 * cosC - y1 * sinC;
+      const y3 = x2 * sinC + y1 * cosC;
+      const persp = 1 / (3 - z2 * 0.5);
+      const sx = cx + x3 * scale * persp * 2;
+      const sy = cy + y3 * scale * persp * 2;
+      projected.push({ x: sx, y: sy, depth: z2, idx: i });
+    }
+    projected.sort((a, b) => a.depth - b.depth);
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`;
+    // transparent background — no <rect> fill
+    svg += `<g font-family="'JetBrains Mono', monospace" font-size="${state.fontSize}" text-anchor="middle" dominant-baseline="middle">`;
+    for (const pr of projected) {
+      if (pr.x < -20 || pr.x > W + 20 || pr.y < -20 || pr.y > H + 20) continue;
+      const ch = chars[pr.idx % chars.length];
+      let alpha;
+      if (state.shading) {
+        const norm = (pr.depth + 1.2) / 2.4;
+        alpha = 0.15 + Math.max(0, Math.min(1, norm)) * 0.85;
+      } else {
+        alpha = 0.95;
+      }
+      svg += `<text x="${pr.x.toFixed(2)}" y="${pr.y.toFixed(2)}" fill="rgba(${rgb.r},${rgb.g},${rgb.b},${alpha.toFixed(2)})">${escapeXml(ch)}</text>`;
+    }
+    svg += `</g></svg>`;
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `typesphere-${state.shape}-${Date.now()}.svg`;
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  });
+
+  function escapeXml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // EXPORT TXT - true ASCII art version, sampled to a character grid
+  function buildAsciiArt() {
+    // build a 2D char grid based on current rotation, then output as plain text
+    const cols = 80, rows = 40;
+    const grid = Array.from({ length: rows }, () => Array(cols).fill(' '));
+    const zbuf = Array.from({ length: rows }, () => Array(cols).fill(-Infinity));
+
+    const cx = cols / 2, cy = rows / 2;
+    // y in terminals is squished — chars are about 2x tall as wide
+    const scale = state.size / 100 * Math.min(cols, rows * 2) * 0.45;
+    const sinA = Math.sin(state.A), cosA = Math.cos(state.A);
+    const sinB = Math.sin(state.B), cosB = Math.cos(state.B);
+    const sinC = Math.sin(state.C), cosC = Math.cos(state.C);
+    const chars = toChars(state.word);
+
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      const y1 = p.y * cosA - p.z * sinA;
+      const z1 = p.y * sinA + p.z * cosA;
+      const x2 = p.x * cosB + z1 * sinB;
+      const z2 = -p.x * sinB + z1 * cosB;
+      const x3 = x2 * cosC - y1 * sinC;
+      const y3 = x2 * sinC + y1 * cosC;
+      const persp = 1 / (3 - z2 * 0.5);
+      const sx = Math.round(cx + x3 * scale * persp);
+      const sy = Math.round(cy + y3 * scale * persp * 0.5);
+      if (sx < 0 || sx >= cols || sy < 0 || sy >= rows) continue;
+      if (z2 > zbuf[sy][sx]) {
+        zbuf[sy][sx] = z2;
+        grid[sy][sx] = chars[i % chars.length];
+      }
+    }
+    return grid.map(r => r.join('')).join('\n');
+  }
+
+  document.getElementById('export-txt').addEventListener('click', () => {
+    const text = buildAsciiArt();
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `typesphere-${state.shape}-${Date.now()}.txt`;
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    const text = buildAsciiArt();
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied';
+      setTimeout(() => { btn.textContent = orig; }, 1200);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
